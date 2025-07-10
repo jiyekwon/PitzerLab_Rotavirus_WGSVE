@@ -1,6 +1,6 @@
 
-# Function:  --------------------------------------------------------------------# 
-# fit VE model and extract summary
+# Function:  -------------------------------------------------------------------- 
+##  fit VE model and extract summary
 get_ve_summary <- function(data, label, adjusted = FALSE) {
   
   if (adjusted) {
@@ -116,5 +116,25 @@ run_multinom_ve_analysis <- function(
   ve_summary <- ve_summary %>%
     left_join(n_table, by = "Outcome")
   
-  return(ve_summary)
+  return(list(ve_summary, mod_multi))
+}
+
+
+
+
+get_city_summary <- function(data, distance_col, vaxx_col) {
+  data %>%
+    group_by(studySite) %>%
+    summarise(
+      coverage = mean({{vaxx_col}}, na.rm = TRUE),
+      mean_distance = mean({{distance_col}}, na.rm = TRUE),
+      sd_distance = sd({{distance_col}}, na.rm = TRUE),
+      n_samples = n(),
+      se_distance = sd_distance / sqrt(n_samples),
+      .groups = "drop"
+    ) %>%
+    mutate(
+      ci_lower = mean_distance - 1.96 * se_distance,
+      ci_upper = mean_distance + 1.96 * se_distance
+    )
 }
