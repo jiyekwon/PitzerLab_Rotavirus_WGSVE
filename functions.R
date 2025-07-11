@@ -121,7 +121,7 @@ run_multinom_ve_analysis <- function(
 
 
 
-
+##  gd by location --- 
 get_city_summary <- function(data, distance_col, vaxx_col) {
   data %>%
     group_by(studySite) %>%
@@ -138,3 +138,63 @@ get_city_summary <- function(data, distance_col, vaxx_col) {
       ci_upper = mean_distance + 1.96 * se_distance
     )
 }
+
+
+
+## sieve analysis functions --- 
+cutBin <- function(col){
+  as.character(cut(col, breaks = breaks, include.lowest = TRUE))
+}
+
+cutBin.f <- function(col){
+  cut(col, breaks = breaks, include.lowest = TRUE)
+}
+
+
+run_sieve_analysis <- function(df, perc_col, vax_to_exclude, breaks_vec, label) {
+  # Filter and prepare
+  df <- df %>% filter(VaxxStatEver_4 != vax_to_exclude) %>%
+    mutate(bin = cut(.data[[perc_col]], breaks = breaks_vec, include.lowest = TRUE))
+  
+  # Define unique bin levels
+  df$bin <- factor(df$bin, levels = levels(df$bin))
+  
+  # Print contingency table
+  cat(paste0("\n## ", label, " Bin Distribution Table ##\n"))
+  print(table(df$VaxxStatEver_4, df$bin))
+  
+  # Run unadjusted model
+  model_unadj <- multinom(bin ~ VaxxStatEver_4, data = df)
+  
+  # Run adjusted models
+  model_c     <- multinom(bin ~ VaxxStatEver_4 + ageYear + careLevel + colYear2, data = df)
+  model_2     <- multinom(bin ~ VaxxStatEver_4 + colYear2, data = df)
+  model_3     <- multinom(bin ~ VaxxStatEver_4 + ageYear + colYear2, data = df)
+  model_4     <- multinom(bin ~ VaxxStatEver_4 + careLevel + colYear2, data = df)
+  
+  # AIC comparison
+  model_list <- list(unadjusted = model_unadj, adj_full = model_c, adj_colYear2 = model_2,
+                     adj_age_colYear2 = model_3, adj_care_colYear2 = model_4)
+  aic_values <- sapply(model_list, AIC)
+  
+  # Summary table of odds ratios
+  summary_table <- function(model) {
+    ors <- odds.ratio(model)
+    data.frame(OR = round(ors[,1], 2),
+               Lower = round(ors[,2], 2),
+               Upper = round(ors[,3], 2))
+  }
+  
+  or_unadj <- summary_table(model_unadj)
+  or_adj2  <- summary_table(model_2)
+  or_adjC  <- summary_table(model_c)
+  
+  list(
+    aic = aic_values,
+    OR_unadjusted = or_unadj,
+    OR_adj_colYear2 = or_adj2,
+    OR_adj_full = or_adjC
+  )
+}
+
+

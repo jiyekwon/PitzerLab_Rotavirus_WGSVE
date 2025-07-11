@@ -8,10 +8,54 @@ library(nnet)
 library(purrr)
 library(ggridges)
 library(forcats)
+library(questionr)
 source("functions.R")
 
-#  VE comparison by Gxpx, protection types  ------------------------------------
 
+#  Sieve analysis   ------------------------------------
+select.all$colYear2<- factor(select.all$colYear, 
+                                 levels = c("2014",  "2012", "2013", "2015", "2016"),
+                                 labels = c("2014", "2012", "2013", "2015", "2016"))
+
+## Run RV1-Specific Analysis -----------------------------
+result_rv1 <- run_sieve_analysis(
+  df = select.all,
+  perc_col = "percTotal.rv1",
+  vax_to_exclude = "Vaccinated_rotateq",
+  breaks_vec = c(0, 9.6, 30),
+  label = "RV1"
+)
+
+
+## Run RV5-Specific Analysis -----------------------------
+result_rv5 <- run_sieve_analysis(
+  df = select.all,
+  perc_col = "percTotal.rv5",
+  vax_to_exclude = "Vaccinated_rotarix",
+  breaks_vec = c(0, 16.7, 30),
+  label = "RV5"
+)
+
+## Summary  -----------------------------
+cat("\n### AIC Comparison ###\n")
+print(data.frame(
+  Model = names(result_rv1$aic),
+  AIC_RV1 = round(result_rv1$aic, 2),
+  AIC_RV5 = round(result_rv5$aic, 2)
+))
+
+cat("\n### Odds Ratios (RV1) ###\n")
+print(result_rv1$OR_unadjusted[2,])
+print(result_rv1$OR_adj_colYear2[2,])
+print(result_rv1$OR_adj_full[2,])
+
+cat("\n### Odds Ratios (RV5) ###\n")
+print(result_rv5$OR_unadjusted[2,])
+print(result_rv5$OR_adj_colYear2[2,])
+print(result_rv5$OR_adj_full[2,])
+
+
+#  VE comparison by Gxpx, protection types  ------------------------------------
 ##  Define genotypes and protection types of interest --------------------------
 vaccine_groups <- c("Overall", "RV5-specific", "RV1-specific")
 outcome_types <- c("GxPx", "Protection", "Distance")
@@ -189,7 +233,7 @@ select.all$vaxx_binary<- ifelse(select.all$VaxxStatEver_4 == "Unvaccinated", "No
 ## Figure A: individual points by study site ----------------------------------
 figure_state.A <- select.all %>% 
   ggplot(aes( x = percTotal.rv1, y = fct_reorder(studySite, RV1.vaxx),color = VaxxStatEver_4 )) +
-  geom_jitter(height = 0.1, width = 1, size = 2, alpha = 0.7) +
+  geom_jitter(height = 0.1, width = 1, size = 3, alpha = 0.7) +
   # scale_color_manual(values = c("#A8ACADFF",  "maroon"), "Vaccination status")+
   scale_color_manual(values = c("#A8ACADFF", "#1B608F", "#D6CBB5FF"), "Vaccination status")+
   labs( x = "Genetic Distance to RV1", y = "Study Site (ordered by RV1 coverage)") +
@@ -226,7 +270,7 @@ ggsave(path = "~/OneDrive - Yale University/Research/PitzerLab_RVAWGS/Final_appr
 ## ---- RV5 plots  --------------------------------------------------------------
 figure_state.A.5 <- select.all %>% 
   ggplot(aes( x = percTotal.rv5, y = fct_reorder(studySite, RV5.vaxx),color = VaxxStatEver_4 )) +
-  geom_jitter(height = 0.1, width = 1, size = 2, alpha = 0.7) +
+  geom_jitter(height = 0.1, width = 1, size = 3, alpha = 0.7) +
   # scale_color_manual(values = c("#A8ACADFF",  "maroon"), "Vaccination status")+
   scale_color_manual(values = c("#A8ACADFF",  "#D6CBB5FF", "maroon" ), "Vaccination status")+
   labs( x = "Genetic Distance to RV5", y = "Study Site (ordered by RV5 coverage)") +
@@ -255,7 +299,7 @@ figure_state.B.5 <- ggplot(city_summary_rv5,
     breaks = c(0, 0.25, 0.50, 0.75),
     limits = c(0, 0.75) ) +
   labs( x = "RV5 Use (%)", y = "Mean Genetic Distance to RV5" ) +
-  #ylim(15, 20)+
+  ylim(14, 19)+
   theme_minimal()
 
 combined_plot.5 <- figure_state.A.5 + plot_spacer()+ figure_state.B.5 + 
@@ -268,3 +312,9 @@ combined_plot.5
 ggsave(path = "~/OneDrive - Yale University/Research/PitzerLab_RVAWGS/Final_approvedVersions/2503_revision1/",
        filename = "location_summary_vaxx_3group_rv5.tiff",
        width =14, height = 7, device='tiff', dpi=200)
+
+
+combined_plot/ combined_plot.5 + plot_annotation(tag_levels = "A") 
+ggsave(path = "~/OneDrive - Yale University/Research/PitzerLab_RVAWGS/Final_approvedVersions/2503_revision1/",
+       filename = "location_combined_2.tiff",
+       width =14, height = 12, device='tiff', dpi=200)
