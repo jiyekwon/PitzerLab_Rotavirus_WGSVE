@@ -9,5 +9,5 @@ This repo gathers the input files and scripts related to our study "Estimation o
 | -------- | ------- |
 | mlr_VE.r    | Main source code for analysis |
 | function.r | Helper functions needed for mlr_VE.r |
-| .R    |  |
+| Supp_genbank_accession.csv   | Nucleotide sequences of the complete genes from the study strains were retrieved from the publicly available GenBank database. The corresponding accession numbers can be found in the Supplemental File. |
 
