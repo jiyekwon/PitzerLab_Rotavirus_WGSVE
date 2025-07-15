@@ -4,5 +4,5 @@ This repo gathers the input files and scripts related to our study "Estimation o
 
 
 Main code: mlr_VE.r       
-Supplemental code: function.r
+Supplemental code: function.r      
 Supplemental file: 
